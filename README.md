@@ -1,4 +1,4 @@
-# Battleship Assignment (C++)
+# Battleship Game Assignment (C++)
 
 ## Overview
 Create a **console-based** Battleship game in C++ with:
@@ -180,5 +180,3 @@ Each calls the base `Ship` constructor with a **unique name** and **size**:
    - Print boards after each attack to track progress.
 3. **Memory Management**  
    - Properly `delete` dynamic allocations (names, ship pointers, etc.) to avoid leaks.
-
-**End of Assignment**

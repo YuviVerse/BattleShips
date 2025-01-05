@@ -3,20 +3,21 @@
 ## Overview
 Create a **console-based** Battleship game in C++ with:
 1. A **Ship** base class and **five derived classes** (Carrier, Battleship, Cruiser, Submarine, Destroyer).
-2. A **Board** (or **Grid**) class for managing a 10×10 layout of cells (ship placement, hits, misses).
+2. A **Grid** class for managing a 10×10 layout of cells (ship placement, hits, misses).
 3. A **Player** base class and two derived classes: **HumanPlayer** and **AiPlayer**.
 4. Turn-by-turn gameplay until one player’s entire fleet (all five ships) is sunk.
+5. **Display** each player’s board **after every move** to show updated hits and misses.
 
 ---
 
 ## Class Details
 
 ### 1. `Ship` (Base Class)
-- **Members**
-  - `char* name;`
-  - `int size;`
+- **Members**  
+  - `char* name;`  
+  - `int size;`  
   - `int hitsTaken;`
-- **Functions**
+- **Functions**  
   - `Ship(const char* shipName, int shipSize);`  
     Initializes `name` and `size`.
   - `virtual ~Ship();`  
@@ -37,132 +38,147 @@ Each calls the base `Ship` constructor with a **unique name** and **size**:
 
 ---
 
-### 3. `Board`
-- **Purpose**: Manages a 10×10 grid for placing ships, and marking hits/misses.
-- **Members**
+### 3. `Grid`
+- **Purpose**: Manages a 10×10 layout of cells for placing ships and marking hits or misses.
+- **Members**  
   - `char cells[10][10];`  
     For instance, `'~'` for empty, `'S'` for ship, `'X'` for hit, `'M'` for miss.
-- **Functions**
-  - `Board();`  
-    Initializes `cells` to a default (e.g., `'~'` for every cell).
+- **Functions**  
+  - `Grid();`  
+    Initializes `cells` (e.g., set all to `'~'`).
   - `bool isTileOccupied(int row, int col) const;`  
-    Returns true if the cell indicates a ship or previously hit cell.
+    Returns true if the cell indicates a ship or a previously hit cell.
   - `bool inBounds(int row, int col, int shipSize, bool horizontal) const;`  
-    Checks if a ship of length `shipSize` fits from `(row, col)` horizontally or vertically in the 10×10 grid.
+    Checks if placing a ship of length `shipSize` at `(row, col)` horizontally/vertically stays within the 10×10 grid.
   - `void placeShip(int row, int col, int shipSize, bool horizontal, char symbol);`  
-    Fills the cells for that ship with `symbol` (e.g., `'S'`) if valid.
+    Marks each relevant cell with `symbol` (e.g., `'S'`) if valid.
   - `void markHit(int row, int col);`  
-    Changes `cells[row][col]` to `'X'`.
+    Marks `cells[row][col]` as `'X'`.
   - `void markMiss(int row, int col);`  
-    Changes `cells[row][col]` to `'M'`.
+    Marks `cells[row][col]` as `'M'`.
   - `char getCell(int row, int col) const;`  
-    Returns the character in `cells[row][col]`.
+    Returns `cells[row][col]`.
+  - **Optional**: A function such as `printGrid()` to display the current state of `cells`.
 
 ---
 
 ### 4. `Player` (Base Class)
-- **Members**
-  - `char* playerName;`
-  - `Ship* ships[5];`
-  - `Board board;`
-- **Functions**
+- **Members**  
+  - `char* playerName;`  
+  - `Ship* ships[5];`  *(five pointers to the different derived Ships)*  
+  - `Grid grid;`       *(a 10×10 grid)*
+- **Functions**  
   - `Player(const char* name);`  
-    Sets `playerName`, initializes the board, etc.
+    Initializes `playerName` and constructs `grid`.  
   - `virtual ~Player();`  
-    Cleans up `playerName` and `Ship` pointers.
+    Cleans up `playerName` and `Ship` pointers.  
   - `virtual void placeAllShips();`  
-    Places the five ships on the board.  
-    - For each ship: find (or prompt for) `(row, col)` and orientation.  
-    - Check `board.inBounds(...)` and `!board.isTileOccupied(...)` for each cell.  
-    - If valid, `board.placeShip(...)`; otherwise retry.  
+    Must place the five ships onto `grid`.  
+    - For each ship, choose `(row, col)` and orientation.  
+    - Check `grid.inBounds(...)` and `grid.isTileOccupied(...)`.  
+    - If valid, use `grid.placeShip(...)`; otherwise retry.  
   - `virtual void makeMove(Player* opponent);`  
-    Chooses `(row, col)` to attack on `opponent->board`.  
-    - If `opponent->board.getCell(row, col)` is a ship symbol, find the corresponding `Ship`, call `takeHit()`, then `board.markHit(row, col)`.  
-    - Else `board.markMiss(row, col)`.  
+    Chooses `(row, col)` to attack on `opponent->grid`.  
+    - If `opponent->grid.getCell(...)` is a ship, find the correct `Ship`, call `takeHit()`, then `opponent->grid.markHit(...)`.  
+    - Otherwise `opponent->grid.markMiss(...)`.  
+    - **After** the attack, **print** both players’ grids so you can see updated hits/misses.
   - `bool allShipsSunk() const;`  
-    Returns true if each `Ship` in `ships[]` is `isSunk()`.
+    Returns true if all five ships are sunk.
+  - **Optional**: `void displayMyGrid()` or `void displayGrid()` to print the grid to the console.
 
 ---
 
 ### 5. `HumanPlayer` (Derived from `Player`)
-- **Overrides**
+- **Overrides**  
   - `void placeAllShips();`  
-    Prompts the user for `(row, col)` and orientation for each ship.  
-    Validates with `Board` functions before placing.
+    - **Prompts user** for `(row, col)` and orientation for each of the five ships.  
+    - Uses `grid.inBounds(...)` and `grid.isTileOccupied(...)` to validate.  
+    - Calls `grid.placeShip(...)` if valid.  
   - `void makeMove(Player* opponent);`  
-    Prompts the user for `(row, col)` to attack, then calls `opponent->board` methods to mark hit/miss.
+    - **Prompts user** for `(row, col)` to attack.  
+    - Checks `opponent->grid.getCell(...)` to see if it’s a ship.  
+    - Calls the relevant `Ship`’s `takeHit()`, marks hits or misses, and **prints** the grids.
 
 ---
 
 ### 6. `AiPlayer` (Derived from `Player`)
-- **Overrides**
+- **Overrides**  
   - `void placeAllShips();`  
-    Automatically (e.g., randomly) picks `(row, col)` and orientation for each ship.  
-    Uses `Board` checks for valid placement; retries if invalid.
+    - **Automatically** chooses `(row, col)` and orientation (random or pattern).  
+    - Uses `grid.inBounds(...)` and `grid.isTileOccupied(...)` to ensure validity.  
+    - Calls `grid.placeShip(...)` if valid; otherwise tries again.  
   - `void makeMove(Player* opponent);`  
-    Automatically picks `(row, col)` to attack. Calls `opponent->board.getCell(...)` to determine hit or miss.
-- **Helper Function**
+    - **Automatically** picks `(row, col)` (random or pattern).  
+    - Checks `opponent->grid.getCell(...)`.  
+    - Calls the correct `Ship`’s `takeHit()`, marks a hit/miss, **prints** both grids afterward.
+- **Helper**  
 ```cpp
   int AiPlayer::getRandomCoordinate() {
       // Ensure srand(...) is called in main
       return std::rand() % 10;
   }
 ```
+*(Remember to call `std::srand(std::time(nullptr))` once in `main`.)*
+
 ---
 
 ### 7. `Game`
-- **Members**
-  - `Player* player1;`
+- **Members**  
+  - `Player* player1;`  
   - `Player* player2;`
-- **Functions**
+- **Functions**  
   - `Game(Player* p1, Player* p2);`  
-    Stores pointers to two `Player` objects (e.g., Human vs AI).
+    Assigns two player objects (e.g., `HumanPlayer` vs. `AiPlayer`).  
   - `void setup();`  
-    Calls `player1->placeAllShips();` then `player2->placeAllShips();`.
+    Calls `player1->placeAllShips();`, then `player2->placeAllShips();`.  
   - `void start();`  
-    Alternates turns:
-    1. `player1->makeMove(player2);`  
-    2. Check if `player2->allShipsSunk()`.  
-    3. `player2->makeMove(player1);`  
-    4. Check if `player1->allShipsSunk()`.  
-    Continues until one side’s ships are all sunk, then announces the winner.
+    - Loop until one side is fully sunk:  
+      1. `player1->makeMove(player2);`  
+      2. Check `player2->allShipsSunk()`.  
+      3. `player2->makeMove(player1);`  
+      4. Check `player1->allShipsSunk()`.  
+    - Announce the winner when a fleet is sunk.
   - `bool isGameOver() const;`  
-    Returns true if either `player1->allShipsSunk()` or `player2->allShipsSunk()`.
+    Returns true if `player1->allShipsSunk()` or `player2->allShipsSunk()`.
 
 ---
 
 ## Steps to Complete
 
-1. **Implement Ship Hierarchy**
-   - Base `Ship` + five derived classes with correct sizes/names.
-   - Each `takeHit()` prints: `"<ShipName> got hit!"`.
+1. **Implement Ship Hierarchy**  
+   - Base `Ship` + five derived classes (Carrier, Battleship, Cruiser, Submarine, Destroyer).
+   - `takeHit()` prints `"<ShipName> got hit!"` and increments `hitsTaken`.
 
-2. **Implement Board**
-   - Use a 2D `char` array for the 10×10 grid.
-   - Provide functions to check/mark cells for ship placement, hits, and misses.
+2. **Implement Grid**  
+   - 10×10 `cells`.  
+   - `isTileOccupied`, `inBounds`, `placeShip`, `markHit`, `markMiss`, etc.
 
-3. **Implement Players**
-   - `HumanPlayer` interacts via console input for ship placement and attacks.
-   - `AiPlayer` uses random (or some pattern) for ship placement and attacks.
-   - Validate placements (in-bounds, no overlap) and handle hits/misses.
+3. **Implement Player Classes**  
+   - `HumanPlayer` for user input on ship placement and attacks.  
+   - `AiPlayer` automates those steps.  
+   - Validate placement and record hits/misses.  
+   - **Always** print both players’ grids after each move.
 
-4. **Implement Game Flow**
-   - Create two `Player` objects (e.g., `HumanPlayer` + `AiPlayer`) in `main()`.
-   - `setup()` for ship placements.
-   - `start()` loops until a fleet is sunk.
+4. **Implement Game**  
+   - Create two `Player` objects (e.g., `HumanPlayer`, `AiPlayer`) in `main()`.  
+   - `setup()` places ships.  
+   - `start()` loops until a fleet is sunk, printing results along the way.
 
-5. **Test Thoroughly**
-   - Confirm correct hits, misses, and that no ships overlap.
-   - Verify the game ends only after all ships of one player are sunk.
+5. **Test Thoroughly**  
+   - Check that ships cannot overlap or exceed grid boundaries.  
+   - Verify hits, misses, and correct sinking behavior.  
+   - Confirm final winner is announced correctly.
 
 ---
 
 ## Deliverables
 
 1. **Header & Source Files**  
-   - For `Ship` hierarchy, `Board`, `Player` hierarchy, and `Game`, plus a `main.cpp`.
+   - For `Ship` (base + derived), `Grid`, `Player` (base + derived), and `Game`, plus a `main.cpp`.
 2. **Working Program**  
-   - Must compile and run from console.  
-   - Demonstrate a full game session, from placing ships to final winner.
+   - Must compile and run, showing a complete session.  
+   - Print boards after each attack to track progress.
 3. **Memory Management**  
-   - Ensure no memory leaks (proper `delete` of dynamically allocated resources).
+   - Properly `delete` dynamic allocations (names, ship pointers, etc.) to avoid leaks.
+
+**End of Assignment**
